@@ -1,0 +1,29 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Quick Mail
+GenericName=Mail Client
+Comment=Send and receive mail, with calendar and contacts — on your machine, not in a cloud
+Exec=quick-mail %u
+Icon=quickopen-quick-mail
+Terminal=false
+Categories=Network;Email;Office;
+Keywords=mail;email;e-mail;calendar;contacts;imap;smtp;pop;newsreader;
+MimeType=x-scheme-handler/mailto;x-scheme-handler/mid;message/rfc822;text/calendar;text/x-vcard;text/directory;application/x-extension-ics;
+# StartupWMClass MUST equal what the running window actually reports, not what
+# the app is called. Declaring a class no window reports is field defect F: the
+# launcher icon comes straight from Icon= and looks fine, while the taskbar and
+# pinned icons fall back to a lightning bolt because Plasma cannot bind the
+# window to this entry. Verified empirically by packaging/verify-wmclass.sh —
+# do not edit this by hand without re-running it.
+StartupWMClass=quickmail
+StartupNotify=true
+Actions=Compose;Contacts;
+
+[Desktop Action Compose]
+Name=Write New Message
+Exec=quick-mail -compose
+
+[Desktop Action Contacts]
+Name=Contacts
+Exec=quick-mail -addressbook

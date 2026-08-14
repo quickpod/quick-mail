@@ -1,0 +1,35 @@
+# Quick Mail build configuration.
+# Copied into the source tree root as `mozconfig` by build.sh.
+
+ac_add_options --enable-application=comm/mail
+
+# ---- identity ---------------------------------------------------------------
+# Our own branding dir (created by build.sh from patches + branding/); the
+# binary is `quickmail`, never `thunderbird` (trademark — see LICENSING.md).
+ac_add_options --with-branding=comm/mail/branding/quickmail
+ac_add_options --with-app-name=quickmail
+ac_add_options --with-distribution-id=ai.quickopen
+
+# ---- product shape ----------------------------------------------------------
+ac_add_options --enable-optimize
+ac_add_options --disable-debug
+ac_add_options --disable-tests
+
+# ---- privacy / fleet rules (same rules the OS enforces) ---------------------
+# no phone-home of any kind, and no self-updater — updates ship through the
+# AIQuick apt repository like every other Quick app (OS rule: no auto-update).
+ac_add_options --disable-crashreporter
+ac_add_options --disable-updater
+ac_add_options --disable-default-browser-agent
+#
+# The data-reporting knobs are NOT settable from here, despite reading like they
+# should be. MOZ_SERVICES_HEALTHREPORT and MOZ_NORMANDY are project_flag()s that
+# accept values only from imply_option() in the application's moz.configure —
+# `export MOZ_SERVICES_HEALTHREPORT=` fails configure outright:
+#   "can not be set by mozconfig. Values are accepted from: implied"
+# So Health Report is switched off by patches/apply-patches.py (patch 3), which
+# also drops MOZ_DATA_REPORTING since toolkit derives it. MOZ_NORMANDY is never
+# implied for Thunderbird, and MOZ_TELEMETRY_REPORTING defaults to
+# mozilla_official — which this build is not.
+
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-quickmail

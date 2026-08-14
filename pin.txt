@@ -1,0 +1,6 @@
+# The exact source Quick Mail is built from.
+# ESR line only (see LICENSING.md "Version policy"). The source tarball at
+# archive.mozilla.org already bundles mozilla-central + comm-central at the
+# matching revisions, so ONE artifact pins the whole tree.
+thunderbird_version=140.13.0esr
+source_url=https://archive.mozilla.org/pub/thunderbird/releases/140.13.0esr/source/thunderbird-140.13.0esr.source.tar.xz

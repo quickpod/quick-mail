@@ -1,0 +1,20 @@
+{
+  "slug": "quick-mail",
+  "name": "Quick Mail",
+  "tagline": "A full-featured desktop email client — IMAP, POP, calendars and chat, with no account requirements and nothing phoning home.",
+  "categorySlug": "email-clients",
+  "license": "MPL-2.0",
+  "description": "Quick Mail is a complete desktop email client built from the Thunderbird open-source project. Full IMAP/POP/SMTP support, OpenPGP end-to-end encryption, calendars and address books, RSS, and multi-account management — rebranded and configured by QuickOpen with telemetry and data-reporting disabled at build time. It does not report to QuickOpen either.",
+  "aiStack": "C++/Rust/JS (Thunderbird engine, MPL-2.0), Quick Mail branding + build configuration",
+  "platforms": [
+    "linux"
+  ],
+  "buildEntry": "bin/quick-mail",
+  "engine": {
+    "repo": "quickpod/quick-mail",
+    "basedOn": "Thunderbird",
+    "engineLicense": "MPL-2.0",
+    "note": "Built from the Thunderbird open-source project. Not Thunderbird, and neither produced nor endorsed by Mozilla or MZLA Technologies."
+  },
+  "platformNotes": "Linux first. An email client renders untrusted remote content, so it inherits the same security-cadence rule as Quick Browser: Windows/macOS are not offered until we can rebuild and re-ship on the upstream ESR schedule."
+}

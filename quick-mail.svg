@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Quick Mail. Original artwork, Apache-2.0, (c) 2026 QuickOpen.
+     Same hero family as Quick Browser: a dimensional object inside the
+     opening orbital arc with a comet head. Here the object is an envelope,
+     lit like the browser's globe so the two sit as siblings on the shelf.
+     No third-party mark is referenced. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"
+     width="512" height="512">
+  <defs>
+    <radialGradient id="paper" cx="38%" cy="30%" r="85%">
+      <stop offset="0%"   stop-color="#2f5fe0"/>
+      <stop offset="45%"  stop-color="#1e2a5e"/>
+      <stop offset="100%" stop-color="#0b1020"/>
+    </radialGradient>
+    <linearGradient id="orbit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#38e1d0"/>
+      <stop offset="55%"  stop-color="#5b86f7"/>
+      <stop offset="100%" stop-color="#5b86f7" stop-opacity="0.15"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="20%" y1="0%" x2="70%" y2="80%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="60%"  stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="env"><rect x="120" y="168" width="272" height="182" rx="24"/></clipPath>
+  </defs>
+
+  <!-- the envelope body -->
+  <rect x="120" y="168" width="272" height="182" rx="24" fill="url(#paper)"/>
+
+  <!-- the flap: a V from the top corners to centre, the mail silhouette.
+       Wide round strokes so it survives 16px exactly like the meridians do. -->
+  <g clip-path="url(#env)" fill="none" stroke="#4a6ad4" stroke-width="16"
+     stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+    <path d="M128 184 L256 292 L384 184"/>
+  </g>
+  <!-- bottom fold hints, quieter -->
+  <g clip-path="url(#env)" fill="none" stroke="#4a6ad4" stroke-width="9"
+     stroke-linecap="round" opacity="0.45">
+    <path d="M138 342 L226 268M374 342 L286 268"/>
+  </g>
+
+  <!-- specular sheen -->
+  <ellipse cx="205" cy="196" rx="130" ry="88" fill="url(#sheen)"
+           clip-path="url(#env)"/>
+
+  <!-- the family orbit: identical path + comet head as Quick Browser -->
+  <path d="M256 60a196 196 0 1 1-138.6 57.4" fill="none" stroke="url(#orbit)"
+        stroke-width="34" stroke-linecap="round"/>
+  <circle cx="256" cy="60" r="19" fill="#38e1d0"/>
+</svg>

@@ -1,0 +1,54 @@
+Quick Mail
+Copyright (c) 2026 QuickOpen
+
+This product is built from the Thunderbird open-source project
+(mozilla-central + comm-central), licensed under the Mozilla Public License,
+version 2.0. A copy of the MPL-2.0 is distributed alongside this file and is
+also available at https://mozilla.org/MPL/2.0/.
+
+Quick Mail is NOT Thunderbird, and is neither produced nor endorsed by Mozilla
+or MZLA Technologies Corporation. "Thunderbird" and the Thunderbird logo are
+trademarks of the Mozilla Foundation and are not licensed under the MPL; Quick
+Mail therefore ships its own name, icons and vendor identity, and the official
+Mozilla branding is never enabled in this build.
+
+SOURCE AVAILABILITY (MPL-2.0 section 3.2)
+-----------------------------------------
+The exact recipe that produces this binary is published at
+
+    https://github.com/quickpod/quick-mail
+
+and consists of:
+
+  * pin.txt      the precise upstream release this is built from
+                 (thunderbird 140.13.0esr), with the source tarball URL; the
+                 tarball is verified against upstream's published SHA256SUMS
+                 before use.
+  * patches/     every modification made to MPL-covered files, as a script that
+                 applies them by exact-string match and fails loudly if upstream
+                 has moved, so the patch set can never silently drift.
+  * branding/    Quick Mail's own branding directory.
+  * mozconfig    the build configuration.
+  * build.sh     the build itself.
+
+Modifications made to MPL-covered files remain under the MPL-2.0.
+
+WHAT WAS CHANGED FROM UPSTREAM
+------------------------------
+  * Product identity (name, profile location, application basename) rebranded
+    to Quick Mail, as the trademark terms require.
+  * OAuth2 client registrations are read from preferences, so Quick Mail
+    presents its own registrations rather than Mozilla's. Upstream's source
+    explicitly asks that its client IDs not be reused.
+  * All automatic network activity in the default configuration removed: the
+    remote start page and the in-app notification poller are disabled and
+    unpointed, and the Health Report service is not compiled in. Quick Mail
+    does not contact any server unless you configure a mail account or click a
+    link. There is no auto-updater; updates arrive through the AIQuick apt
+    channel.
+
+THIRD-PARTY COMPONENTS
+----------------------
+The Thunderbird source tree vendors a large number of third-party libraries,
+each retaining its own license. Their notices are preserved inside the source
+tree and are reproduced in the application under "About Quick Mail".
