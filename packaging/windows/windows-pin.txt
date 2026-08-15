@@ -1,0 +1,11 @@
+# The exact upstream Windows binaries QuickMail-Setup.exe repackages (v1).
+# The Linux deb is a full from-source rebrand (see ../../pin.txt); the Windows
+# source build is a later phase. Until then the payload is the OFFICIAL
+# Thunderbird ESR win64 en-US release — same ESR the Linux build pins —
+# extracted from Mozilla's installer and shipped byte-identical (Mozilla's
+# Authenticode signatures intact), plus our distribution/ branding.
+#
+# sha512 is Mozilla's own, from .../releases/140.13.0esr/SHA512SUMS.
+thunderbird_version=140.13.0esr
+url=https://archive.mozilla.org/pub/thunderbird/releases/140.13.0esr/win64/en-US/Thunderbird%20Setup%20140.13.0esr.exe
+sha512=6d553ee75293f2a2fc8576c3244e5d041c171c6e32c2997e429444f59925e502f697966cc8646154fad26881a62b3172c88b415dac9ff79e1fd91a414e8071cb

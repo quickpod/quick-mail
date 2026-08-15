@@ -1,0 +1,20 @@
+{
+  "__COMMENT__": "Quick Mail Windows v1 ships the upstream Thunderbird ESR binaries (see windows-pin.txt) with this policy file mirroring the from-source Linux build's branding prefs (branding/quickmail/pref/thunderbird-branding.js). Same rule as there: every default that reached the network on its own is off — no telemetry, no self-updater, no start-page fetch, no in-app notification polling. Prefs use Status:default, not locked: the user may re-enable, exactly as on Linux.",
+  "policies": {
+    "DisableAppUpdate": true,
+    "DisableTelemetry": true,
+    "DisableSystemAddonUpdate": true,
+    "ExtensionUpdate": false,
+    "CaptivePortal": false,
+    "Preferences": {
+      "mailnews.start_page.enabled": { "Value": false, "Status": "default" },
+      "mailnews.start_page.url": { "Value": "about:blank", "Status": "default" },
+      "mail.inappnotifications.enabled": { "Value": false, "Status": "default" },
+      "mail.inappnotifications.url": { "Value": "", "Status": "default" },
+      "app.update.url.manual": { "Value": "https://quickopen.ai/quick-mail", "Status": "default" },
+      "app.update.url.details": { "Value": "https://quickopen.ai/quick-mail", "Status": "default" },
+      "datareporting.healthreport.uploadEnabled": { "Value": false, "Status": "default" },
+      "datareporting.policy.dataSubmissionEnabled": { "Value": false, "Status": "default" }
+    }
+  }
+}
