@@ -16,7 +16,17 @@ MimeType=x-scheme-handler/mailto;x-scheme-handler/mid;message/rfc822;text/calend
 # pinned icons fall back to a lightning bolt because Plasma cannot bind the
 # window to this entry. Verified empirically by packaging/verify-wmclass.sh —
 # do not edit this by hand without re-running it.
-StartupWMClass=quickmail
+#
+# 2026-08-16, Quick OS 0.1.12 field defect ("quick mail still shows thunderbird
+# icon in task bar"): the value was `quickmail` and the running window reports
+#   WM_CLASS(STRING) = "Mail", "quickmail-default"
+# so Plasma could not bind the window to this entry and fell back to the
+# window's own _NET_WM_ICON — the stock Thunderbird bird compiled into the
+# binary. Gecko appends "-<profile>" to the class, and the DEFAULT profile is
+# what a normal launch uses; verify-wmclass.sh used to launch with an explicit
+# `-profile <tmpdir>`, which suppresses the suffix and is exactly why the
+# verifier passed while the field failed. Both are fixed together.
+StartupWMClass=quickmail-default
 StartupNotify=true
 Actions=Compose;Contacts;
 

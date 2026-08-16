@@ -37,10 +37,18 @@ BIN="$WORK/x/opt/quick-mail/quickmail"
 # circuited by an existing profile's state.
 export HOME="$WORK/home"; mkdir -p "$HOME"
 
-echo "== launching under Xvfb"
+# A NOTE ON THE PROFILE (0.1.12 field defect). This used to launch with an
+# explicit `-profile <tmpdir>`. Gecko derives the WM_CLASS *class* from the
+# remoting name PLUS the profile it ended up using, so `-profile` produced
+# "quickmail" while every real launch produces "quickmail-default" - the
+# harness disagreed with the field and the verifier passed a package whose
+# taskbar icon was broken. It now launches exactly the way the desktop entry
+# does (default profile inside a throwaway HOME), so what it reads is what
+# users get.
+echo "== launching under Xvfb (DEFAULT profile, throwaway HOME)"
 REPORTED=""
 xvfb-run -a --server-args="-screen 0 1280x900x24" bash -c '
-  "'"$BIN"'" -profile "'"$WORK"'/profile" >/dev/null 2>&1 &
+  "'"$BIN"'" >/dev/null 2>&1 &
   APP=$!
   for i in $(seq 1 60); do
     W=$(xdotool search --onlyvisible --name . 2>/dev/null | head -1 || true)
