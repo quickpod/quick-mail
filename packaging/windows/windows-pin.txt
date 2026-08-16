@@ -9,3 +9,15 @@
 thunderbird_version=140.13.0esr
 url=https://archive.mozilla.org/pub/thunderbird/releases/140.13.0esr/win64/en-US/Thunderbird%20Setup%20140.13.0esr.exe
 sha512=6d553ee75293f2a2fc8576c3244e5d041c171c6e32c2997e429444f59925e502f697966cc8646154fad26881a62b3172c88b415dac9ff79e1fd91a414e8071cb
+
+# BRANDED PAYLOAD EXE (field defect fix): the Windows taskbar shows the
+# window icon, which comes from thunderbird.exe's OWN icon-resource group —
+# so the stock build showed the Thunderbird logo while running. Icon group
+# 32512 is rebuilt from our .ico by icon-patch.ps1 (real Windows only).
+# TRADEOFF, on the record: rewriting a resource invalidates Mozilla's
+# Authenticode signature on thunderbird.exe, so it is stripped first and the
+# modified exe is RE-SIGNED with the QuickOpen Root CA — nothing ships
+# unsigned-after-modification. Every OTHER payload binary (xul.dll etc.)
+# still carries Mozilla's original signature, byte-identical.
+winshell_url=https://nsis.sourceforge.io/mediawiki/images/5/54/WinShell.zip
+winshell_sha256=34e111f8aacf64c540d848fd06b9d6f3e2c10cb825ec9329a01d1141973e749b

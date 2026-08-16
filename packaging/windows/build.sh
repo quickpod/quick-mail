@@ -56,6 +56,29 @@ cp "$REPO"/licenses/* "$PAYLOAD/licenses/"
 ICO="$WORK/quick-mail.ico"
 convert "$ROOT/publish/icons/quick-mail.png" -define icon:auto-resize=256,128,64,48,32,16 "$ICO"
 
+# BRANDED thunderbird.exe (field defect: the taskbar shows the window icon,
+# which comes from the exe's OWN icon group). Mozilla's Authenticode signature
+# is stripped first (a resource rewrite invalidates it anyway and leaves a
+# stale cert directory), icon-patch.ps1 rebuilds icon group 32512 from our
+# .ico ON A REAL WINDOWS BOX, and the result is re-signed with the QuickOpen
+# CA. Tradeoff recorded in windows-pin.txt. Every OTHER payload binary keeps
+# Mozilla's signature. This build refuses to pack an unbranded thunderbird.exe.
+OVERRIDE="$ROOT/winbuild/overrides/quick-mail/thunderbird.exe"
+[ -f "$OVERRIDE" ] || { echo "!! missing branded+signed thunderbird.exe at $OVERRIDE" >&2
+  echo "!! prepare it with packaging/windows/icon-patch.ps1 + osslsigncode (see installer.nsi header)" >&2; exit 1; }
+cp "$OVERRIDE" "$PAYLOAD/thunderbird.exe"
+echo "   branded thunderbird.exe: $(sha256sum "$PAYLOAD/thunderbird.exe" | cut -c1-16)..."
+
+# WinShell NSIS plug-in (shortcut AUMID), pinned in windows-pin.txt
+WINSHELL="$ROOT/winbuild/tools/WinShell/Plugins/x86-unicode"
+if [ ! -f "$WINSHELL/WinShell.dll" ]; then
+  mkdir -p "$ROOT/winbuild/tools" && cd "$ROOT/winbuild/tools"
+  curl -sL -o WinShell.zip "$(pin winshell_url)"
+  echo "$(pin winshell_sha256)  WinShell.zip" | sha256sum -c - >/dev/null || { echo "!! WinShell.zip sha mismatch" >&2; exit 1; }
+  unzip -o -q WinShell.zip -d WinShell
+  cd - >/dev/null
+fi
+
 EST_KB="$(du -sk "$PAYLOAD" | cut -f1)"
 LICENSEFILE="$REPO/licenses/MPL-2.0.txt"
 makensis -V2 \
@@ -64,6 +87,7 @@ makensis -V2 \
   -DDISPLAYVERSION="$DISPLAYVER" \
   -DESTSIZE_KB="$EST_KB" \
   -DICOFILE="$ICO" \
+  -DPLUGINDIR="$WINSHELL" \
   -DLICENSEFILE="$LICENSEFILE" \
   -DOUTFILE="$OUT/QuickMail-Setup.exe" \
   "$HERE/installer.nsi"

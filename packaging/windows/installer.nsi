@@ -16,11 +16,17 @@
 
 Unicode true
 !include "MUI2.nsh"
+; WinShell plug-in (pinned in windows-pin.txt): sets the AppUserModelID on the
+; shortcuts. Paired with the TaskBarIDs registry override below, the running
+; app and its shortcuts share OUR identity, so the taskbar shows the Quick
+; Mail icon embedded in thunderbird.exe.
+!addplugindir "${PLUGINDIR}"
 
 !define APPNAME "Quick Mail"
 !define APPKEY  "QuickMail"
 !define PUBLISHER "QuickOpen"
 !define APPURL "https://quickopen.ai/projects/quick-mail"
+!define AUMID "QuickOpen.QuickMail"
 !define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPKEY}"
 
 Name "${APPNAME}"
@@ -66,6 +72,13 @@ Section "Quick Mail"
   ; shortcuts — Quick name + Quick icon
   CreateShortCut "$SMPROGRAMS\${APPNAME}.lnk" "$INSTDIR\thunderbird.exe" "" "$INSTDIR\quick-mail.ico" 0 SW_SHOWNORMAL "" "Send and receive mail, with calendar and contacts — on your machine, not in a cloud"
   CreateShortCut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\thunderbird.exe" "" "$INSTDIR\quick-mail.ico" 0
+  ; one AUMID for the shortcuts AND the running app: Mozilla apps look up
+  ; their AppUserModelID in ...\TaskBarIDs (value name = install dir) before
+  ; falling back to a path hash, so writing ours here makes the running
+  ; window and the pinned shortcut one taskbar identity.
+  WinShell::SetLnkAUMI "$SMPROGRAMS\${APPNAME}.lnk" "${AUMID}"
+  WinShell::SetLnkAUMI "$DESKTOP\${APPNAME}.lnk" "${AUMID}"
+  WriteRegStr HKLM "Software\Mozilla\Thunderbird\TaskBarIDs" "$INSTDIR" "${AUMID}"
 
   ; uninstall entry
   WriteRegStr HKLM "${UNINSTKEY}" "DisplayName" "${APPNAME}"
@@ -103,6 +116,7 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\${APPNAME}.lnk"
   Delete "$DESKTOP\${APPNAME}.lnk"
   DeleteRegValue HKLM "Software\RegisteredApplications" "${APPNAME}"
+  DeleteRegValue HKLM "Software\Mozilla\Thunderbird\TaskBarIDs" "$INSTDIR"
   DeleteRegKey HKLM "Software\Classes\${APPKEY}.Url.mailto"
   DeleteRegKey HKLM "Software\Clients\Mail\${APPNAME}"
   DeleteRegKey HKLM "${UNINSTKEY}"
