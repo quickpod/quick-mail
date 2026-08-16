@@ -75,6 +75,43 @@ fi
 # build leftovers that are not part of a shipped app
 rm -rf "$OPT/gtest" "$OPT/tests" "$OPT"/*.chk
 
+# ------------------------------------------------- the Aura layout defaults
+# <appdir>/defaults/pref/*.js are read as DEFAULT prefs — the supported
+# no-rebuild way to ship the modern layout (vertical view + cards list).
+# Defaults, not locks; see the file's own header for the value semantics.
+install -m 0644 "$REPO/defaults/pref/quickmail-layout.js" \
+        "$OPT/defaults/pref/quickmail-layout.js"
+
+# ---------------------------------------------------- the Aura setup artwork
+# Swap upstream's octopus mascot illustration for our Aura envelope INSIDE
+# omni.ja (provenance: artwork/PROVENANCE.md). Packaging-time repack, not a
+# source patch: the entry is REPLACED at its original path so the chrome URL
+# keeps resolving, and it is STORED (-0) because omni.ja entries must be
+# uncompressed for the startup mmap fast path. Validated live on the Quick OS
+# VM before this was baked (mail starts, setup tab shows the new art in both
+# Aura themes).
+OCTOPUS_PATH="chrome/classic/skin/classic/messenger/illustrations/octopus-setup.svg"
+command -v zip >/dev/null || { echo "zip missing (apt install zip)" >&2; exit 1; }
+# capture the listing FIRST: unzip exits non-zero on omni.ja's stripped-junk
+# warnings, and under pipefail `unzip | grep -q` reports failure even on a
+# match (grep's early exit SIGPIPEs unzip too). Same trap as the OS chain's
+# `grep -rl | while` lesson: never let unzip/grep exit codes meet pipefail.
+OMNI_LIST="$(unzip -l "$OPT/omni.ja" 2>/dev/null || true)"
+case "$OMNI_LIST" in
+  *"$OCTOPUS_PATH"*) : ;;
+  *) echo "!! $OCTOPUS_PATH not found in omni.ja — did upstream move the illustration?" >&2; exit 1 ;;
+esac
+TMPART="$(mktemp -d)"
+mkdir -p "$TMPART/$(dirname "$OCTOPUS_PATH")"
+cp "$REPO/artwork/octopus-setup.svg" "$TMPART/$OCTOPUS_PATH"
+( cd "$TMPART" && zip -0 -X "$OPT/omni.ja" "$OCTOPUS_PATH" >/dev/null )
+rm -rf "$TMPART"
+# prove the replacement landed (size must match our asset, not upstream's)
+NEWSZ="$( { unzip -l "$OPT/omni.ja" 2>/dev/null || true; } | awk -v p="$OCTOPUS_PATH" '$NF==p{print $1}')"
+OURSZ="$(stat -c%s "$REPO/artwork/octopus-setup.svg")"
+[ "$NEWSZ" = "$OURSZ" ] || { echo "!! omni.ja artwork repack failed ($NEWSZ != $OURSZ)" >&2; exit 1; }
+echo "   omni.ja: octopus-setup.svg replaced with Aura artwork ($OURSZ bytes)"
+
 # ---------------------------------------------------------------- the wrapper
 cat > "$STAGE/usr/bin/quick-mail" <<'WRAP'
 #!/bin/sh
