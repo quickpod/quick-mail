@@ -17,6 +17,7 @@ ROOT="$(cd "$REPO/../.." && pwd)"
 DL="${1:-$ROOT/winbuild/downloads}"
 OUT="${2:-$ROOT/winbuild/dist}"
 WORK="$ROOT/winbuild/work/quick-mail"
+SYSCA="${QUICKOPEN_SYSCA:-/etc/ssl/certs/ca-certificates.crt}"  # public roots, to READ the EV signer
 
 pin(){ awk -F= -v k="$1" '$1==k{print $2}' "$HERE/windows-pin.txt" | tr -d ' \r'; }
 VER="$(pin thunderbird_version)"          # e.g. 140.13.0esr
@@ -84,14 +85,46 @@ fi
 
 EST_KB="$(du -sk "$PAYLOAD" | cut -f1)"
 LICENSEFILE="$REPO/licenses/MPL-2.0.txt"
-makensis -V2 \
-  -DPAYLOAD="$PAYLOAD" \
-  -DVERSION="$NUMVER.0" \
-  -DDISPLAYVERSION="$DISPLAYVER" \
-  -DESTSIZE_KB="$EST_KB" \
-  -DICOFILE="$ICO" \
-  -DPLUGINDIR="$WINSHELL" \
-  -DLICENSEFILE="$LICENSEFILE" \
+
+# THE SIGNED UNINSTALLER — see installer.nsi's two-pass note. NSIS emits an
+# uninstaller only when a built installer RUNS, so it cannot be produced here;
+# the generator stub has to execute on Windows. Two modes over ONE argument
+# list, so the passes cannot drift in the defines they see:
+#
+#   QUICKOPEN_UNINST_STUB_ONLY=1   compile the payload-free pass-1 stub, stop
+#   (default)                      the real installer, embedding the signed one
+NSIARGS=(
+  -DPAYLOAD="$PAYLOAD"
+  -DVERSION="$NUMVER.0"
+  -DDISPLAYVERSION="$DISPLAYVER"
+  -DESTSIZE_KB="$EST_KB"
+  -DICOFILE="$ICO"
+  -DPLUGINDIR="$WINSHELL"
+  -DLICENSEFILE="$LICENSEFILE"
+)
+
+if [ "${QUICKOPEN_UNINST_STUB_ONLY:-0}" = "1" ]; then
+  STUB="$ROOT/winbuild/uninstallers/quick-mail/stub.exe"
+  mkdir -p "$(dirname "$STUB")"
+  # -DUNINSTALLER must exist even though pass 1 skips the branch that uses it:
+  # makensis resolves ${...} at parse time, so an undefined symbol is an error.
+  makensis -V2 -DUNINSTALLER_ONLY -DUNINSTALLER=/dev/null \
+    "${NSIARGS[@]}" -DOUTFILE="$STUB" "$HERE/installer.nsi"
+  echo "   pass-1 stub: $STUB ($(du -h "$STUB" | cut -f1))"
+  exit 0
+fi
+
+UNINST="$ROOT/winbuild/uninstallers/quick-mail/Uninstall.exe"
+[ -f "$UNINST" ] || { echo "!! missing signed uninstaller at $UNINST" >&2
+  echo "!! build it: QUICKOPEN_UNINST_STUB_ONLY=1 $0" >&2; exit 1; }
+EVOUT="$(osslsigncode verify -in "$UNINST" -CAfile "$SYSCA" 2>&1 || true)"
+printf '%s' "$EVOUT" | grep -qi "CN=Dosvak LLC" || {
+  echo "!! uninstaller is NOT EV-signed — refusing to build" >&2
+  echo "!!   publish/scripts/sign-windows-artifact.sh $UNINST" >&2; exit 1; }
+echo "   uninstaller: $(sha256sum "$UNINST" | cut -c1-16)... (EV: CN=Dosvak LLC)"
+
+makensis -V2 "${NSIARGS[@]}" \
+  -DUNINSTALLER="$UNINST" \
   -DOUTFILE="$OUT/QuickMail-Setup.exe" \
   "$HERE/installer.nsi"
 

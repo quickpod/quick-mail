@@ -32,12 +32,31 @@ Unicode true
 Name "${APPNAME}"
 OutFile "${OUTFILE}"
 InstallDir "$PROGRAMFILES64\QuickOpen\${APPNAME}"
-RequestExecutionLevel admin
 ; the outer installer gets Authenticode-signed after the build; the appended
 ; signature would invalidate the NSIS CRC, so integrity rides on the signature
 CRCCheck off
-SetCompressor /SOLID lzma
-SetCompressorDictSize 64
+
+; TWO-PASS UNINSTALLER SIGNING.
+; NSIS has no compile-time way to emit an uninstaller: `WriteUninstaller` only
+; produces one when a built installer RUNS. So the uninstaller a user launches
+; from Add/Remove Programs was unsigned, and being admin-elevated it showed
+; "Unknown publisher" on its UAC prompt — the one dialog where a publisher name
+; matters most.
+;
+; Pass 1 (-DUNINSTALLER_ONLY) compiles a payload-free stub that does nothing but
+; write Uninstall.exe beside itself. It is run once on the Windows box, the
+; result is EV-signed, and pass 2 EMBEDS that signed file with `File` instead of
+; calling WriteUninstaller. The uninstall Section below is compiled into both
+; passes, so the signed binary is byte-for-byte the uninstaller this installer
+; would have generated. Driver: publish/scripts/make-signed-uninstaller.sh
+!ifdef UNINSTALLER_ONLY
+  RequestExecutionLevel user     ; must run without elevation on the build hop
+  SetCompressor /SOLID zlib      ; no payload to compress; keep pass 1 quick
+!else
+  RequestExecutionLevel admin
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 64
+!endif
 
 VIProductVersion "${VERSION}"
 VIAddVersionKey "ProductName" "${APPNAME}"
@@ -56,6 +75,15 @@ VIAddVersionKey "LegalCopyright" "Engine: MPL-2.0 (a derivative of Thunderbird).
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 
+!ifdef UNINSTALLER_ONLY
+; Pass 1. Run this stub with /S; it drops Uninstall.exe next to itself and exits.
+; It installs nothing and touches no registry key.
+Section "gen"
+  SetOutPath "$EXEDIR"
+  WriteUninstaller "$EXEDIR\Uninstall.exe"
+SectionEnd
+!else
+
 Section "Quick Mail"
   SetRegView 64
   SetShellVarContext all
@@ -67,7 +95,8 @@ Section "Quick Mail"
   ; our branding + licences
   File "${ICOFILE}"
 
-  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  ; the EV-signed uninstaller from pass 1, embedded rather than generated
+  File /oname=Uninstall.exe "${UNINSTALLER}"
 
   ; shortcuts — Quick name + Quick icon
   CreateShortCut "$SMPROGRAMS\${APPNAME}.lnk" "$INSTDIR\thunderbird.exe" "" "$INSTDIR\quick-mail.ico" 0 SW_SHOWNORMAL "" "Send and receive mail, with calendar and contacts — on your machine, not in a cloud"
@@ -109,6 +138,8 @@ Section "Quick Mail"
   WriteRegStr HKLM "Software\Classes\${APPKEY}.Url.mailto\shell\open\command" "" '"$INSTDIR\thunderbird.exe" -osint -compose "%1"'
   WriteRegStr HKLM "Software\RegisteredApplications" "${APPNAME}" "Software\Clients\Mail\${APPNAME}\Capabilities"
 SectionEnd
+
+!endif   ; UNINSTALLER_ONLY
 
 Section "Uninstall"
   SetRegView 64
