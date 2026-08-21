@@ -56,37 +56,21 @@ cp "$REPO"/licenses/* "$PAYLOAD/licenses/"
 ICO="$WORK/quick-mail.ico"
 convert "$ROOT/publish/icons/quick-mail.png" -define icon:auto-resize=256,128,64,48,32,16 "$ICO"
 
-# BRANDED thunderbird.exe (field defect: the taskbar shows the window icon,
-# which comes from the exe's OWN icon group). Mozilla's Authenticode signature
-# is stripped first (a resource rewrite invalidates it anyway and leaves a
-# stale cert directory), icon-patch.ps1 rebuilds icon group 32512 from our
-# .ico ON A REAL WINDOWS BOX, and the result is EV-signed on the sansan token.
-# Tradeoff recorded in windows-pin.txt. Every OTHER payload binary keeps
-# Mozilla's signature. This build refuses to pack an unbranded thunderbird.exe.
-OVERRIDE="$ROOT/winbuild/overrides/quick-mail/thunderbird.exe"
-[ -f "$OVERRIDE" ] || { echo "!! missing branded+signed thunderbird.exe at $OVERRIDE" >&2
-  echo "!! prepare it with packaging/windows/icon-patch.ps1, then EV-sign it:" >&2
-  echo "!!   publish/scripts/sign-windows-artifact.sh $OVERRIDE" >&2; exit 1; }
-
-# GATE: the payload must be EV-signed, not merely present. This one matters
-# more than the browser's — here we STRIP Mozilla's signature to rewrite the
-# icon group, so a payload that is not re-signed with a trusted certificate is
-# strictly worse than what upstream shipped. Until 2026-08-21 it carried the
-# QuickOpen Root CA, which Windows does not trust: the trade recorded in
-# windows-pin.txt ("a signature for a signature") did not actually hold.
+# SIGNED PAYLOAD BINARIES. thunderbird.exe is MODIFIED — the taskbar shows the
+# window icon, which comes from the exe's OWN icon group, so icon-patch.ps1
+# rebuilds group 32512 from our .ico on a real Windows box. That invalidates
+# Mozilla's Authenticode signature, which is stripped first; the result is
+# EV-signed on the sansan token, so one trusted signature replaces another.
+# (Before 2026-08-21 the replacement was the QuickOpen Root CA, which no
+# Windows machine trusts — the trade windows-pin.txt claimed did not hold.)
 #
-# CAPTURE, THEN GREP: `osslsigncode verify` exits non-zero on this box even for
-# a good EV signature (it cannot chain the Sectigo timestamp), so a
-# `... | grep -q` pipeline under `set -o pipefail` is always false and would
-# reject every correctly-signed payload. -CAfile is required to name the signer.
-SYSCA="${QUICKOPEN_SYSCA:-/etc/ssl/certs/ca-certificates.crt}"
-EVOUT="$(osslsigncode verify -in "$OVERRIDE" -CAfile "$SYSCA" 2>&1 || true)"
-printf '%s' "$EVOUT" | grep -qi "CN=Dosvak LLC" || {
-  echo "!! thunderbird.exe override is NOT EV-signed — refusing to build" >&2
-  echo "!!   publish/scripts/sign-windows-artifact.sh $OVERRIDE" >&2; exit 1; }
-
-cp "$OVERRIDE" "$PAYLOAD/thunderbird.exe"
-echo "   branded thunderbird.exe: $(sha256sum "$PAYLOAD/thunderbird.exe" | cut -c1-16)... (EV: CN=Dosvak LLC)"
+# Every OTHER exe in this payload keeps Mozilla's own signature: none of them
+# ships unsigned, so there is nothing here for us to improve and stripping a
+# vendor signature to substitute ours would be a downgrade.
+#
+# apply-overrides.sh applies the tree and then GATES: if any exe in the payload
+# is unsigned, the build fails rather than shipping it.
+"$ROOT/publish/scripts/apply-overrides.sh" "$PAYLOAD" "$ROOT/winbuild/overrides/quick-mail"
 
 # WinShell NSIS plug-in (shortcut AUMID), pinned in windows-pin.txt
 WINSHELL="$ROOT/winbuild/tools/WinShell/Plugins/x86-unicode"
