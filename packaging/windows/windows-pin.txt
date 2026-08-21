@@ -16,8 +16,15 @@ sha512=6d553ee75293f2a2fc8576c3244e5d041c171c6e32c2997e429444f59925e502f697966cc
 # 32512 is rebuilt from our .ico by icon-patch.ps1 (real Windows only).
 # TRADEOFF, on the record: rewriting a resource invalidates Mozilla's
 # Authenticode signature on thunderbird.exe, so it is stripped first and the
-# modified exe is RE-SIGNED with the QuickOpen Root CA — nothing ships
-# unsigned-after-modification. Every OTHER payload binary (xul.dll etc.)
-# still carries Mozilla's original signature, byte-identical.
+# modified exe is RE-SIGNED with the Dosvak LLC EV certificate (Sectigo Public
+# Code Signing CA EV R36) and RFC3161-timestamped — one trusted signature
+# replaced by another. Every OTHER payload binary (xul.dll etc.) still carries
+# Mozilla's original signature, byte-identical.
+#
+# That trade only became true on 2026-08-21. Before it, the re-signature was
+# the QuickOpen Root CA — our own root, trusted by no Windows machine — so we
+# had in fact swapped Mozilla's trusted signature for one SmartScreen treats as
+# no signature at all. packaging/windows/build.sh now REFUSES to pack a payload
+# that is not signed by CN=Dosvak LLC, so the trade cannot silently lapse.
 winshell_url=https://nsis.sourceforge.io/mediawiki/images/5/54/WinShell.zip
 winshell_sha256=34e111f8aacf64c540d848fd06b9d6f3e2c10cb825ec9329a01d1141973e749b

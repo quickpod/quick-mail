@@ -60,14 +60,33 @@ convert "$ROOT/publish/icons/quick-mail.png" -define icon:auto-resize=256,128,64
 # which comes from the exe's OWN icon group). Mozilla's Authenticode signature
 # is stripped first (a resource rewrite invalidates it anyway and leaves a
 # stale cert directory), icon-patch.ps1 rebuilds icon group 32512 from our
-# .ico ON A REAL WINDOWS BOX, and the result is re-signed with the QuickOpen
-# CA. Tradeoff recorded in windows-pin.txt. Every OTHER payload binary keeps
+# .ico ON A REAL WINDOWS BOX, and the result is EV-signed on the sansan token.
+# Tradeoff recorded in windows-pin.txt. Every OTHER payload binary keeps
 # Mozilla's signature. This build refuses to pack an unbranded thunderbird.exe.
 OVERRIDE="$ROOT/winbuild/overrides/quick-mail/thunderbird.exe"
 [ -f "$OVERRIDE" ] || { echo "!! missing branded+signed thunderbird.exe at $OVERRIDE" >&2
-  echo "!! prepare it with packaging/windows/icon-patch.ps1 + osslsigncode (see installer.nsi header)" >&2; exit 1; }
+  echo "!! prepare it with packaging/windows/icon-patch.ps1, then EV-sign it:" >&2
+  echo "!!   publish/scripts/sign-windows-artifact.sh $OVERRIDE" >&2; exit 1; }
+
+# GATE: the payload must be EV-signed, not merely present. This one matters
+# more than the browser's — here we STRIP Mozilla's signature to rewrite the
+# icon group, so a payload that is not re-signed with a trusted certificate is
+# strictly worse than what upstream shipped. Until 2026-08-21 it carried the
+# QuickOpen Root CA, which Windows does not trust: the trade recorded in
+# windows-pin.txt ("a signature for a signature") did not actually hold.
+#
+# CAPTURE, THEN GREP: `osslsigncode verify` exits non-zero on this box even for
+# a good EV signature (it cannot chain the Sectigo timestamp), so a
+# `... | grep -q` pipeline under `set -o pipefail` is always false and would
+# reject every correctly-signed payload. -CAfile is required to name the signer.
+SYSCA="${QUICKOPEN_SYSCA:-/etc/ssl/certs/ca-certificates.crt}"
+EVOUT="$(osslsigncode verify -in "$OVERRIDE" -CAfile "$SYSCA" 2>&1 || true)"
+printf '%s' "$EVOUT" | grep -qi "CN=Dosvak LLC" || {
+  echo "!! thunderbird.exe override is NOT EV-signed — refusing to build" >&2
+  echo "!!   publish/scripts/sign-windows-artifact.sh $OVERRIDE" >&2; exit 1; }
+
 cp "$OVERRIDE" "$PAYLOAD/thunderbird.exe"
-echo "   branded thunderbird.exe: $(sha256sum "$PAYLOAD/thunderbird.exe" | cut -c1-16)..."
+echo "   branded thunderbird.exe: $(sha256sum "$PAYLOAD/thunderbird.exe" | cut -c1-16)... (EV: CN=Dosvak LLC)"
 
 # WinShell NSIS plug-in (shortcut AUMID), pinned in windows-pin.txt
 WINSHELL="$ROOT/winbuild/tools/WinShell/Plugins/x86-unicode"
